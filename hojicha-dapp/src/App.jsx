@@ -1,95 +1,82 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ethers } from 'ethers';
-import Header from './components/Header';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
-import { colors } from './styles/colors';
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import Header from './components/Header';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: colors.primary,
-    },
-    secondary: {
-      main: colors.secondary,
-    },
-    background: {
-      default: colors.background,
-    },
-  },
-  typography: {
-    fontFamily: '"Poppins", sans-serif',
-  },
-});
-
-export default function App() {
+function App() {
   const [account, setAccount] = useState(null);
+  const [validNetwork, setValidNetwork] = useState(false);
 
-  const checkWalletConnection = async () => {
-    if (window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-          setAccount(accounts[0]);
+  // Cek koneksi wallet & network saat load
+  useEffect(() => {
+    const init = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            setAccount(accounts[0]);
+            await checkNetwork();
+          }
+        } catch (error) {
+          console.error("Init error:", error);
         }
-      } catch (error) {
-        console.error("Error checking wallet connection:", error);
       }
+    };
+    init();
+  }, []);
+
+  const checkNetwork = async () => {
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    const isValid = chainId === '0x27ea'; // Tea Sepolia
+    setValidNetwork(isValid);
+    return isValid;
+  };
+
+  const connectWallet = async () => {
+    try {
+      if (!window.ethereum) {
+        alert('Please install MetaMask!');
+        return;
+      }
+
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      setAccount(accounts[0]);
+      
+      const isCorrectNetwork = await checkNetwork();
+      if (!isCorrectNetwork) {
+        alert('Please switch to Tea Sepolia Network');
+      }
+    } catch (error) {
+      console.error("Connect error:", error);
     }
   };
 
-  // Ganti seluruh kode connectWallet dengan:
-const connectWallet = async () => {
-  try {
-    if (!window.ethereum) {
-      alert('Silakan install MetaMask!');
-      return;
-    }
-    
-    const accounts = await window.ethereum.request({ 
-      method: 'eth_requestAccounts' 
-    });
-    setAccount(accounts[0]);
-    
-    // Cek network tapi tidak otomatis switch
-    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== '0x27ea') {
-      alert('Silakan switch network ke Tea Sepolia (Chain ID: 10218) di MetaMask Anda');
-    }
-  } catch (error) {
-    alert('Gagal connect wallet: ' + error.message);
-  }
-};
-
-  useEffect(() => {
-    checkWalletConnection();
-
-    // Listen for account changes
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        setAccount(accounts[0] || null);
-      });
-    }
-
-    return () => {
-      if (window.ethereum) {
-        window.ethereum.removeListener('accountsChanged', () => {});
-      }
-    };
-  }, []);
-
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <Header account={account} setAccount={setAccount} connectWallet={connectWallet} />
-        <Routes>
-          <Route path="/" element={<Home connectWallet={connectWallet} />} />
-          <Route path="/dashboard" element={<Dashboard account={account} />} />
-        </Routes>
-      </BrowserRouter>
-    </ThemeProvider>
+    <BrowserRouter>
+      <Header account={account} connectWallet={connectWallet} />
+      <Routes>
+        <Route path="/" element={
+          account && validNetwork ? (
+            <Dashboard account={account} />
+          ) : (
+            <Home 
+              connectWallet={connectWallet} 
+              isWrongNetwork={account && !validNetwork}
+            />
+          )
+        } />
+        {/* Auto-redirect jika langsung akses /dashboard */}
+        <Route path="/dashboard" element={
+          account && validNetwork ? (
+            <Dashboard account={account} />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        } />
+      </Routes>
+    </BrowserRouter>
   );
 }
+
+export default App;

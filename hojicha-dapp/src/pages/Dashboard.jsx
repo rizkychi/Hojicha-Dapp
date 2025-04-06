@@ -6,7 +6,7 @@ import NetworkSwitcher from '../components/NetworkSwitcher';
 export default function Dashboard({ account }) {
   return (
     <Box sx={{ p: 3 }}>
-      <NetworkSwitcher />
+      {/* <NetworkSwitcher /> */}
       <TokenCreator account={account} />
       <TokenList account={account} />
     </Box>

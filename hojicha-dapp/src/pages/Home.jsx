@@ -1,8 +1,28 @@
 import { Box, Typography, Button } from '@mui/material';
 import { colors } from '../styles/colors';
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function Home({ connectWallet }) {
+export default function Home({ connectWallet, isConnected }) {
+  const navigate = useNavigate();
+
+  // Handle redirect setelah koneksi berhasil
+  useEffect(() => {
+    if (isConnected) {
+      navigate('/dashboard');
+    }
+  }, [isConnected, navigate]);
+
+  // Fungsi wrapper untuk handle connect + error
+  const handleConnect = async () => {
+    try {
+      await connectWallet();
+    } catch (error) {
+      console.error("Connection error:", error);
+    }
+  };
+
   return (
     <Box sx={{ 
       display: 'flex', 
@@ -49,7 +69,7 @@ export default function Home({ connectWallet }) {
         <Button 
           variant="contained" 
           size="large"
-          onClick={connectWallet}
+          onClick={handleConnect}
           sx={{ 
             backgroundColor: colors.primary,
             '&:hover': { backgroundColor: colors.secondary },
@@ -60,15 +80,6 @@ export default function Home({ connectWallet }) {
         >
           Connect Wallet to Get Started
         </Button>
-        <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-          Pastikan MetaMask sudah diset ke:
-          <br />
-          <strong>Network:</strong> Tea Sepolia
-          <br />
-          <strong>Chain ID:</strong> 10218
-          <br />
-          <strong>RPC URL:</strong> https://tea-sepolia.g.alchemy.com/public
-        </Typography>
       </motion.div>
     </Box>
   );
