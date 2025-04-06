@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import Hojicha from '../contracts/Hojicha.json';
 
-const HOJICHA_CONTRACT_ADDRESS = "0x81Ae4bedfc15E67fd099471534b4864d8b9f8b6F";
+const HOJICHA_CONTRACT_ADDRESS = "0xBf27B69449cCc28C8DDb92CbAc3Ce4290C4C3975";
 
 export default function TokenCreator({ account }) {
   const [name, setName] = useState('');

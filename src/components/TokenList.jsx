@@ -19,7 +19,7 @@ import {
 import { colors } from '../styles/colors';
 import HojichaABI from '../contracts/Hojicha.json';
 
-const HOJICHA_CONTRACT_ADDRESS = "0x81Ae4bedfc15E67fd099471534b4864d8b9f8b6F";
+const HOJICHA_CONTRACT_ADDRESS = "0xBf27B69449cCc28C8DDb92CbAc3Ce4290C4C3975";
 
 export default function TokenList({ account }) {
   const [tokens, setTokens] = useState([]);
@@ -40,49 +40,22 @@ export default function TokenList({ account }) {
         
         const provider = new ethers.BrowserProvider(window.ethereum);
         const contract = new ethers.Contract(
-          HOJICHA_CONTRACT_ADDRESS, 
-          HojichaABI.abi, 
+          HOJICHA_CONTRACT_ADDRESS,
+          HojichaABI.abi,
           provider
         );
+
+        // Menggunakan fungsi getTokensByOwner dari kontrak baru
+        const tokenInfos = await contract.getTokensByOwner(account);
         
-        // Asumsi contract memiliki mapping atau array untuk menyimpan token
-        // Contoh 1: Jika menggunakan mapping (creator => token address)
-        // const tokenAddress = await contract.tokens(account);
+        setTokens(tokenInfos.map(info => ({
+          address: info.tokenAddress,
+          name: info.name,
+          symbol: info.symbol,
+          supply: info.totalSupply.toString(),
+          creator: info.creator
+        })));
         
-        // Contoh 2: Jika menggunakan array
-        const tokenCount = await contract.tokenCount();
-        const tokenAddresses = [];
-        for (let i = 0; i < tokenCount; i++) {
-          tokenAddresses.push(await contract.tokenList(i));
-        }
-
-        // Jika mendapatkan single token address
-        if (tokenAddress && tokenAddress !== ethers.ZeroAddress) {
-          const tokenContract = new ethers.Contract(
-            tokenAddress,
-            [
-              "function name() view returns (string)",
-              "function symbol() view returns (string)",
-              "function totalSupply() view returns (uint256)"
-            ],
-            provider
-          );
-
-          const [name, symbol, supply] = await Promise.all([
-            tokenContract.name(),
-            tokenContract.symbol(),
-            tokenContract.totalSupply()
-          ]);
-
-          setTokens([{
-            address: tokenAddress,
-            name: name || "Unnamed Token",
-            symbol: symbol || "TOKEN",
-            supply: supply.toString()
-          }]);
-        } else {
-          setTokens([]);
-        }
       } catch (error) {
         console.error("Failed to fetch tokens:", error);
         setError(`Failed to load tokens: ${error.reason || error.message}`);
@@ -93,7 +66,6 @@ export default function TokenList({ account }) {
 
     fetchTokens();
 
-    // Refresh setiap 30 detik
     const interval = setInterval(fetchTokens, 30000);
     return () => clearInterval(interval);
   }, [account]);
@@ -169,6 +141,10 @@ export default function TokenList({ account }) {
               
               <Typography variant="body2" sx={{ mb: 1 }}>
                 Total Supply: {ethers.formatUnits(token.supply, 18)}
+              </Typography>
+              
+              <Typography variant="body2" sx={{ mb: 1, fontStyle: 'italic' }}>
+                Creator: {token.creator === account ? "You" : token.creator}
               </Typography>
               
               <Divider sx={{ my: 2 }} />
