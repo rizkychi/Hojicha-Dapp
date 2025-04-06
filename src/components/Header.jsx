@@ -116,7 +116,7 @@ export default function Header({ account, setAccount }) {
     <AppBar position="static" sx={{ backgroundColor: colors.primary }}>
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Hojicha Token DApp
+          Hojicha DApp
         </Typography>
         
         {currentNetwork && (

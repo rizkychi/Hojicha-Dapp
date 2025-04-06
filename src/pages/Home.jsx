@@ -43,7 +43,7 @@ export default function Home({ connectWallet, isConnected }) {
           mb: 3,
           fontWeight: 700
         }}>
-          Welcome to Hojicha Token DApp
+          Welcome to Hojicha DApp
         </Typography>
       </motion.div>
       
