@@ -38,7 +38,7 @@ export default function Header({ account, setAccount }) {
   const connectWallet = async () => {
     try {
       if (!window.ethereum) {
-        alert('Silakan install MetaMask!');
+        alert('Please install MetaMask!');
         return;
       }
       
@@ -48,7 +48,7 @@ export default function Header({ account, setAccount }) {
       setAccount(accounts[0]);
       checkNetwork();
     } catch (error) {
-      alert('Gagal connect wallet: ' + error.message);
+      alert('Failed to connect wallet: ' + error.message);
     }
   };
 
@@ -81,8 +81,8 @@ export default function Header({ account, setAccount }) {
       }
       await checkNetwork();
     } catch (error) {
-      console.error('Gagal switch network:', error);
-      alert(`Gagal switch network: ${error.message}\n\nSilakan switch manual ke:\nNetwork: Tea Sepolia\nChain ID: 10218`);
+      console.error('Failed to switch network:', error);
+      alert(`Failed to switch network: ${error.message}\n\nPlease switch to:\nNetwork: Tea Sepolia\nChain ID: 10218`);
     } finally {
       setSwitchingNetwork(false);
     }

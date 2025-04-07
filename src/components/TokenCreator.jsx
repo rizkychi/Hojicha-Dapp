@@ -12,7 +12,7 @@ import Hojicha from '../contracts/Hojicha.json';
 
 const HOJICHA_CONTRACT_ADDRESS = "0xBf27B69449cCc28C8DDb92CbAc3Ce4290C4C3975";
 
-export default function TokenCreator({ account }) {
+export default function TokenCreator({ account, onTokenCreated }) {
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
   const [supply, setSupply] = useState('');
