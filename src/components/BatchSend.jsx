@@ -1,49 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { 
-  Button, 
-  TextField, 
-  Box, 
-  Typography, 
+import {
+  Button,
+  TextField,
+  Box,
+  Typography,
   CircularProgress,
   Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
-import { HOJICHA_CONTRACT_ADDRESS } from '../constants';
+import HojichaABI from '../contracts/Hojicha.json';
 
-export default function BatchSend({ account }) {
+export default function BatchSend({ account, userTokens }) {
   const [tokenAddress, setTokenAddress] = useState('');
-  const [transfers, setTransfers] = useState([{ address: '', amount: '' }]);
+  const [customAddress, setCustomAddress] = useState('');
+  const [useCustomAddress, setUseCustomAddress] = useState(false);
+  const [recipientAddresses, setRecipientAddresses] = useState('');
+  const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const addTransfer = () => {
-    setTransfers([...transfers, { address: '', amount: '' }]);
-  };
+  useEffect(() => {
+    if (userTokens.length > 0 && !useCustomAddress) {
+      setTokenAddress(userTokens[0].tokenAddress);
+    }
+  }, [userTokens, useCustomAddress]);
 
-  const removeTransfer = (index) => {
-    const newTransfers = [...transfers];
-    newTransfers.splice(index, 1);
-    setTransfers(newTransfers);
-  };
-
-  const updateTransfer = (index, field, value) => {
-    const newTransfers = [...transfers];
-    newTransfers[index][field] = value;
-    setTransfers(newTransfers);
+  const handleTokenAddressChange = (event) => {
+    if (useCustomAddress) {
+      setCustomAddress(event.target.value);
+    } else {
+      setTokenAddress(event.target.value);
+    }
   };
 
   const sendBatch = async () => {
-    if (!tokenAddress || transfers.some(t => !t.address || !t.amount)) {
+    const addressToUse = useCustomAddress ? customAddress : tokenAddress;
+
+    if (!addressToUse || !recipientAddresses || !amount) {
       setError('Please fill in all fields!');
       return;
     }
@@ -51,28 +51,26 @@ export default function BatchSend({ account }) {
     try {
       setLoading(true);
       setError(null);
-      
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      
-      // Load token contract
-      const token = new ethers.Contract(
-        tokenAddress,
-        ['function transfer(address to, uint256 amount) returns (bool)'],
+
+      const contract = new ethers.Contract(
+        addressToUse,
+        HojichaABI.abi,
         signer
       );
-      
-      // Send all transfers
-      for (const transfer of transfers) {
-        const tx = await token.transfer(
-          transfer.address,
-          ethers.parseUnits(transfer.amount, 18)
-        );
-        await tx.wait();
-      }
-      
+
+      const addresses = recipientAddresses.split('\n').filter(addr => addr);
+      const amounts = Array(addresses.length).fill(ethers.parseUnits(amount, 18));
+
+      const tx = await contract.batchTransferToken(addressToUse, addresses, amounts);
+      await tx.wait();
+
       setSuccess(true);
-      
+      setRecipientAddresses('');
+      setAmount('');
+
     } catch (error) {
       console.error("Batch send failed:", error);
       setError(`Failed to send batch: ${error.reason || error.message}`);
@@ -86,92 +84,85 @@ export default function BatchSend({ account }) {
       <Typography variant="h5" gutterBottom>
         Batch Send Tokens
       </Typography>
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
-      
+
       {success && (
         <Alert severity="success" sx={{ mb: 2 }}>
           Batch transfer completed successfully!
         </Alert>
       )}
 
+      <FormControlLabel
+        control={
+          <Switch
+            checked={useCustomAddress}
+            onChange={(e) => setUseCustomAddress(e.target.checked)}
+          />
+        }
+        label="Use Custom Token Address"
+      />
+
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <InputLabel id="token-address-label">Token Address</InputLabel>
+        {useCustomAddress ? (
+          <TextField
+            label="Custom Token Address"
+            value={customAddress}
+            onChange={handleTokenAddressChange}
+            fullWidth
+          />
+        ) : (
+          <Select
+            labelId="token-address-label"
+            value={tokenAddress}
+            onChange={handleTokenAddressChange}
+          >
+            {userTokens.map((token) => (
+              <MenuItem key={token.tokenAddress} value={token.tokenAddress}>
+                {`${token.name} (${token.tokenAddress})`}
+              </MenuItem>
+            ))}
+          </Select>
+        )}
+      </FormControl>
+
       <TextField
-        label="Token Contract Address"
-        value={tokenAddress}
-        onChange={(e) => setTokenAddress(e.target.value)}
+        label="Recipient Addresses (one per line)"
+        value={recipientAddresses}
+        onChange={(e) => setRecipientAddresses(e.target.value)}
+        fullWidth
+        multiline
+        rows={5}
+        sx={{ mb: 3 }}
+        placeholder="Enter one address per line"
+      />
+
+      <TextField
+        label="Amount (same for all addresses)"
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
         fullWidth
         sx={{ mb: 3 }}
       />
-      
-      <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Recipient Address</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Action</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {transfers.map((transfer, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <TextField
-                    value={transfer.address}
-                    onChange={(e) => updateTransfer(index, 'address', e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    type="number"
-                    value={transfer.amount}
-                    onChange={(e) => updateTransfer(index, 'amount', e.target.value)}
-                    fullWidth
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <IconButton 
-                    onClick={() => removeTransfer(index)}
-                    disabled={transfers.length <= 1}
-                  >
-                    <Delete />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button
-          variant="outlined"
-          startIcon={<Add />}
-          onClick={addTransfer}
-        >
-          Add Recipient
-        </Button>
-        
-        <Button
-          variant="contained"
-          onClick={sendBatch}
-          disabled={loading || !account}
-          sx={{ flexGrow: 1 }}
-        >
-          {loading ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            'Send Batch'
-          )}
-        </Button>
-      </Box>
+      <Button
+        variant="contained"
+        onClick={sendBatch}
+        disabled={loading || !account}
+        fullWidth
+      >
+        {loading ? (
+          <CircularProgress size={24} color="inherit" />
+        ) : (
+          'Send Batch'
+        )}
+      </Button>
     </Box>
   );
 }
