@@ -9,8 +9,7 @@ import {
   Alert 
 } from '@mui/material';
 import Hojicha from '../contracts/Hojicha.json';
-
-const HOJICHA_CONTRACT_ADDRESS = "0xBf27B69449cCc28C8DDb92CbAc3Ce4290C4C3975";
+import { HOJICHA_CONTRACT_ADDRESS } from '../constants';
 
 export default function TokenCreator({ account, onTokenCreated }) {
   const [name, setName] = useState('');
@@ -86,7 +85,15 @@ export default function TokenCreator({ account, onTokenCreated }) {
       
       {success && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Token created successfully! TX Hash: {txHash}
+          Token created successfully!{' '}
+          <a 
+            href={`https://sepolia.tea.xyz/tx/${txHash}`} 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{color: '#1976d2', textDecoration: 'underline'}}
+          >
+            View on Explorer
+          </a>
         </Alert>
       )}
 

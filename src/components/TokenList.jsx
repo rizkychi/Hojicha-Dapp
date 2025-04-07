@@ -17,9 +17,8 @@ import {
   OpenInNew as ExplorerIcon
 } from '@mui/icons-material';
 import { colors } from '../styles/colors';
+import { HOJICHA_CONTRACT_ADDRESS } from '../constants';
 import HojichaABI from '../contracts/Hojicha.json';
-
-const HOJICHA_CONTRACT_ADDRESS = "0xBf27B69449cCc28C8DDb92CbAc3Ce4290C4C3975";
 
 export default function TokenList({ account }) {
   const [tokens, setTokens] = useState([]);

@@ -17,6 +17,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Add, Delete } from '@mui/icons-material';
+import { HOJICHA_CONTRACT_ADDRESS } from '../constants';
 
 export default function BatchSend({ account }) {
   const [tokenAddress, setTokenAddress] = useState('');

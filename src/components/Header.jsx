@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { colors } from '../styles/colors';
 
-export default function Header({ account, setAccount }) {
+export default function Header({ account, connectWallet }) {
   const [currentNetwork, setCurrentNetwork] = useState('');
   const [addressCopied, setAddressCopied] = useState(false);
   const [switchingNetwork, setSwitchingNetwork] = useState(false);
@@ -35,18 +35,9 @@ export default function Header({ account, setAccount }) {
     blockExplorerUrls: ['https://sepolia.tea.xyz/']
   };
 
-  const connectWallet = async () => {
+  const connectWalletHandler = async () => {
     try {
-      if (!window.ethereum) {
-        alert('Please install MetaMask!');
-        return;
-      }
-      
-      const accounts = await window.ethereum.request({ 
-        method: 'eth_requestAccounts' 
-      });
-      setAccount(accounts[0]);
-      checkNetwork();
+      await connectWallet();
     } catch (error) {
       alert('Failed to connect wallet: ' + error.message);
     }
@@ -112,6 +103,12 @@ export default function Header({ account, setAccount }) {
     }
   }, [account]);
 
+  useEffect(() => {
+    if (currentNetwork === 'Tea Sepolia' && window.location.pathname !== '/dashboard') {
+      window.location.href = '/dashboard';
+    }
+  }, [currentNetwork]);
+
   return (
     <AppBar position="static" sx={{ backgroundColor: colors.primary }}>
       <Toolbar>
@@ -165,7 +162,7 @@ export default function Header({ account, setAccount }) {
         ) : (
           <Button 
             variant="contained" 
-            onClick={connectWallet}
+            onClick={connectWalletHandler}
             sx={{ 
               backgroundColor: colors.secondary,
               '&:hover': { backgroundColor: colors.accent }
