@@ -497,12 +497,13 @@ const HOJICHA_ABI = [
 
 // Simple ERC20 ABI for token interactions
 const ERC20_ABI = [
-  'function name() view returns (string)",ew returns (string)',
+  "function name() view returns (string)",
   "function symbol() view returns (string)",
   "function decimals() view returns (uint8)",
   "function totalSupply() view returns (uint256)",
   "function balanceOf(address) view returns (uint256)",
   "function transfer(address to, uint256 amount) returns (bool)",
+  "function approve(address spender, uint256 amount) returns (bool)",
   "event Transfer(address indexed from, address indexed to, uint256 value)",
 ]
 
@@ -521,9 +522,6 @@ const TEA_SEPOLIA_CONFIG = {
   rpcUrls: ["https://tea-sepolia.g.alchemy.com/public"],
   blockExplorerUrls: ["https://sepolia.tea.xyz"],
 }
-
-// Mock Token Factory address (replace with actual address)
-// const TOKEN_FACTORY_ADDRESS = "0x1234567890123456789012345678901234567890"
 
 interface Web3ContextType {
   provider: ethers.BrowserProvider | null
@@ -549,6 +547,8 @@ interface Web3ContextType {
     minAmount?: number,
     maxAmount?: number,
   ) => Promise<void>
+  showWalletModal: boolean
+  setShowWalletModal: (show: boolean) => void
 }
 
 const Web3Context = createContext<Web3ContextType | null>(null)
@@ -565,6 +565,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   const [userTokens, setUserTokens] = useState<Token[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [hojichaContract, setHojichaContract] = useState<ethers.Contract | null>(null)
+  const [showWalletModal, setShowWalletModal] = useState(false)
 
   const { toast } = useToast()
 
@@ -627,12 +628,13 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     setSigner(null)
     setAccount("")
     setNetworkName("")
-    setTeaBalance("")
+    setTeaBalance("0")
     setIsConnected(false)
     setIsCorrectNetwork(false)
     setUserTokens([])
     setTransactions([])
     setHojichaContract(null)
+    setShowWalletModal(false)
   }
 
   // Check if connected to Tea Sepolia network
@@ -841,6 +843,37 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // Get BatchTransfer events
+      const batchTransferFilter = hojichaContract.filters.BatchTransfer(null, account)
+      const batchTransferEvents = await hojichaContract.queryFilter(batchTransferFilter)
+
+      // Process batch transfer events
+      for (const event of batchTransferEvents) {
+        const args = event.args
+        if (args) {
+          // Get token details
+          const tokenContract = new ethers.Contract(args.tokenAddress, ERC20_ABI, signer)
+          const tokenName = await tokenContract.name()
+          const tokenSymbol = await tokenContract.symbol()
+
+          // Create a transaction for each recipient
+          for (let i = 0; i < args.recipients.length; i++) {
+            allTransactions.push({
+              hash: event.transactionHash + "-" + i,
+              tokenAddress: args.tokenAddress,
+              tokenName: tokenName,
+              tokenSymbol: tokenSymbol,
+              amount: ethers.formatUnits(args.amounts[i], 18),
+              type: "sent",
+              counterparty: args.recipients[i],
+              timestamp: (await provider.getBlock(event.blockNumber))?.timestamp
+                ? Number((await provider.getBlock(event.blockNumber))!.timestamp) * 1000
+                : Date.now(),
+            })
+          }
+        }
+      }
+
       // Sort transactions by timestamp (newest first)
       allTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
@@ -939,9 +972,38 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 
       setTransactions((prev) => [newTransaction, ...prev])
 
+      // Show success notification with TX hash
+      toast({
+        title: "Token Created Successfully",
+        description: (
+          <div className="flex flex-col space-y-1">
+            <span>
+              {name} ({symbol}) created successfully
+            </span>
+            <a
+              href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono text-blue-500 hover:underline truncate"
+            >
+              TX: {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
+            </a>
+          </div>
+        ),
+        variant: "default",
+      })
+
       return newToken
     } catch (error) {
       console.error("Error creating token:", error)
+
+      // Show error notification
+      toast({
+        title: "Token Creation Failed",
+        description: error.message || "Something went wrong during token creation",
+        variant: "destructive",
+      })
+
       throw error
     }
   }
@@ -951,10 +1013,17 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     if (!signer || !hojichaContract) throw new Error("Wallet not connected")
 
     try {
+      // Get token contract
+      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer)
+
       // Convert amount to wei (assuming 18 decimals)
       const amountWei = ethers.parseUnits(amount, 18)
 
-      // Call the transferToken function on the contract
+      // First approve the Hojicha contract to spend tokens
+      const approveTx = await tokenContract.approve(HOJICHA_CONTRACT_ADDRESS, amountWei)
+      await approveTx.wait()
+
+      // Now call the transferToken function on the contract
       const tx = await hojichaContract.transferToken(tokenAddress, to, amountWei)
 
       // Show loading toast
@@ -964,7 +1033,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       })
 
       // Wait for transaction to be mined
-      await tx.wait()
+      const receipt = await tx.wait()
 
       // Update token balance
       setUserTokens((prev) =>
@@ -993,9 +1062,36 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 
       setTransactions((prev) => [newTransaction, ...prev])
 
+      // Show success notification with TX hash
+      toast({
+        title: "Transfer Successful",
+        description: (
+          <div className="flex flex-col space-y-1">
+            <span>Tokens transferred successfully</span>
+            <a
+              href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono text-blue-500 hover:underline truncate"
+            >
+              TX: {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
+            </a>
+          </div>
+        ),
+        variant: "default",
+      })
+
       return newTransaction
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error transferring token:", error)
+
+      // Show error notification
+      toast({
+        title: "Transfer Failed",
+        description: error.message || "Something went wrong during the transfer",
+        variant: "destructive",
+      })
+
       throw error
     }
   }
@@ -1011,6 +1107,9 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     if (!signer || !hojichaContract) throw new Error("Wallet not connected")
 
     try {
+      // Get token contract
+      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer)
+
       let amounts: ethers.BigNumberish[] = []
       let totalAmount = 0
 
@@ -1028,6 +1127,13 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         totalAmount = Number.parseFloat(amount) * recipients.length
       }
 
+      // Calculate total amount to approve
+      const totalAmountWei = amounts.reduce((a, b) => a + BigInt(b.toString()), BigInt(0))
+
+      // First approve the Hojicha contract to spend tokens
+      const approveTx = await tokenContract.approve(HOJICHA_CONTRACT_ADDRESS, totalAmountWei)
+      await approveTx.wait()
+
       // Call the batchTransferToken function on the contract
       const tx = await hojichaContract.batchTransferToken(tokenAddress, recipients, amounts)
 
@@ -1038,7 +1144,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       })
 
       // Wait for transaction to be mined
-      await tx.wait()
+      const receipt = await tx.wait()
 
       // Find token details
       const token = userTokens.find((t) => t.address === tokenAddress)
@@ -1072,12 +1178,61 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       // Add transaction records
       setTransactions((prev) => [...newTransactions, ...prev])
 
+      // Show success notification with TX hash
+      toast({
+        title: "Batch Transfer Successful",
+        description: (
+          <div className="flex flex-col space-y-1">
+            <span>Tokens transferred to {recipients.length} recipients</span>
+            <a
+              href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono text-blue-500 hover:underline truncate"
+            >
+              TX: {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
+            </a>
+          </div>
+        ),
+        variant: "default",
+      })
+
       return newTransactions
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error batch transferring tokens:", error)
+
+      // Show error notification
+      toast({
+        title: "Batch Transfer Failed",
+        description: error.message || "Something went wrong during the batch transfer",
+        variant: "destructive",
+      })
+
       throw error
     }
   }
+
+  // Update TEA balance periodically
+  useEffect(() => {
+    if (!isConnected || !provider || !account) return
+
+    const updateBalance = async () => {
+      try {
+        const balance = await provider.getBalance(account)
+        setTeaBalance(ethers.formatEther(balance))
+      } catch (error) {
+        console.error("Error updating TEA balance:", error)
+      }
+    }
+
+    // Update balance immediately
+    updateBalance()
+
+    // Then update every 15 seconds
+    const interval = setInterval(updateBalance, 15000)
+
+    return () => clearInterval(interval)
+  }, [isConnected, provider, account])
 
   // Listen for account changes
   useEffect(() => {
@@ -1125,7 +1280,6 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     autoConnect()
   }, [])
 
-  // Add teaBalance to the context provider value
   return (
     <Web3Context.Provider
       value={{
@@ -1146,6 +1300,8 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         createToken,
         transferToken,
         batchTransferToken,
+        showWalletModal,
+        setShowWalletModal,
       }}
     >
       {children}

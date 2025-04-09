@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useWeb3 } from "@/components/providers/web3-provider"
 import { Layout } from "@/components/layout"
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import { Loader2 } from "lucide-react"
+import { Loader2, Clipboard } from "lucide-react"
 import { TokenSelect } from "@/components/token/token-select"
 import { BackButton } from "@/components/back-button"
 
@@ -19,6 +19,7 @@ export default function TransferTokenPage() {
   const { isConnected, transferToken, userTokens, loadUserTokens } = useWeb3()
   const router = useRouter()
   const { toast } = useToast()
+  const hiddenInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     tokenAddress: "",
@@ -37,11 +38,50 @@ export default function TransferTokenPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+
+    // Prevent negative amounts
+    if (name === "amount" && value.startsWith("-")) {
+      return
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleTokenSelect = (value: string) => {
     setFormData((prev) => ({ ...prev, tokenAddress: value }))
+  }
+
+  const handlePasteAddress = () => {
+    // Create a temporary input element to handle the paste operation
+    if (hiddenInputRef.current) {
+      // Focus the hidden input and execute paste command
+      hiddenInputRef.current.value = ""
+      hiddenInputRef.current.focus()
+
+      // Use setTimeout to ensure the focus is complete
+      setTimeout(() => {
+        document.execCommand("paste")
+
+        // Get the pasted value and update the form
+        const pastedValue = hiddenInputRef.current?.value || ""
+        if (pastedValue) {
+          setFormData((prev) => ({ ...prev, recipient: pastedValue }))
+          toast({
+            title: "Address Pasted",
+            description: "Recipient address pasted from clipboard",
+          })
+        } else {
+          toast({
+            title: "Paste Failed",
+            description: "No content in clipboard or paste operation failed",
+            variant: "destructive",
+          })
+        }
+
+        // Restore focus to the main form
+        document.getElementById("amount")?.focus()
+      }, 100)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +91,16 @@ export default function TransferTokenPage() {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate amount is greater than 0
+    if (Number(formData.amount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Amount must be greater than 0",
         variant: "destructive",
       })
       return
@@ -70,11 +120,6 @@ export default function TransferTokenPage() {
     try {
       await transferToken(formData.tokenAddress, formData.recipient, formData.amount)
 
-      toast({
-        title: "Success!",
-        description: `${formData.amount} tokens transferred successfully`,
-      })
-
       setFormData((prev) => ({
         ...prev,
         recipient: "",
@@ -84,11 +129,7 @@ export default function TransferTokenPage() {
       // Reload user tokens
       await loadUserTokens()
     } catch (error: any) {
-      toast({
-        title: "Error transferring tokens",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      })
+      console.error("Transfer error:", error)
     } finally {
       setIsLoading(false)
     }
@@ -113,14 +154,35 @@ export default function TransferTokenPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="recipient">Recipient Address</Label>
-                <Input
-                  id="recipient"
-                  name="recipient"
-                  value={formData.recipient}
-                  onChange={handleChange}
-                  placeholder="0x..."
-                  className="rounded-lg border-gray-200 focus-visible:ring-hojicha-brown"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="recipient"
+                    name="recipient"
+                    value={formData.recipient}
+                    onChange={handleChange}
+                    placeholder="0x..."
+                    className="rounded-lg border-gray-200 focus-visible:ring-hojicha-brown"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handlePasteAddress}
+                    className="border-gray-200 hover:bg-hojicha-brown/10 hover:text-hojicha-brown cursor-pointer"
+                    title="Paste from clipboard"
+                  >
+                    <Clipboard className="h-4 w-4" />
+                  </Button>
+
+                  {/* Hidden input for paste operation */}
+                  <input
+                    ref={hiddenInputRef}
+                    type="text"
+                    className="opacity-0 h-0 w-0 absolute"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -136,6 +198,8 @@ export default function TransferTokenPage() {
                   id="amount"
                   name="amount"
                   type="number"
+                  min="0"
+                  step="any"
                   value={formData.amount}
                   onChange={handleChange}
                   className="rounded-lg border-gray-200 focus-visible:ring-hojicha-brown"
@@ -159,6 +223,10 @@ export default function TransferTokenPage() {
             </form>
           </CardContent>
         </Card>
+
+        <p className="mt-4 text-center text-muted-foreground">
+          Easily transfer your tokens to any Ethereum address
+        </p>
       </div>
     </Layout>
   )

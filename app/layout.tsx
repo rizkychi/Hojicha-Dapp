@@ -14,7 +14,7 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "Hojicha DApp",
   description: "Create and manage tokens on Tea Sepolia network",
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -24,6 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/hojicha.svg" />
+      </head>
       <body className={`${nunito.variable} font-sans bg-hojicha-beige min-h-screen`}>
         <Web3Provider>
           {children}
@@ -33,6 +37,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-
-import './globals.css'

@@ -37,6 +37,12 @@ export default function CreateTokenPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+
+    // Prevent negative amounts for initialSupply
+    if (name === "initialSupply" && value.startsWith("-")) {
+      return
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -52,14 +58,19 @@ export default function CreateTokenPage() {
       return
     }
 
+    // Validate initial supply is greater than 0
+    if (Number(formData.initialSupply) <= 0) {
+      toast({
+        title: "Invalid Initial Supply",
+        description: "Initial supply must be greater than 0",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
     try {
       await createToken(formData.name, formData.symbol, formData.initialSupply)
-
-      toast({
-        title: "Success!",
-        description: `Token ${formData.name} (${formData.symbol}) created successfully`,
-      })
 
       setFormData({
         name: "",
@@ -70,11 +81,7 @@ export default function CreateTokenPage() {
       // Reload user tokens
       await loadUserTokens()
     } catch (error: any) {
-      toast({
-        title: "Error creating token",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      })
+      console.error("Token creation error:", error)
     } finally {
       setIsLoading(false)
     }
@@ -119,6 +126,8 @@ export default function CreateTokenPage() {
                     id="initialSupply"
                     name="initialSupply"
                     type="number"
+                    min="0"
+                    step="any"
                     value={formData.initialSupply}
                     onChange={handleChange}
                     className="rounded-lg border-gray-200 focus-visible:ring-hojicha-brown"
@@ -142,6 +151,10 @@ export default function CreateTokenPage() {
               </form>
             </CardContent>
           </Card>
+
+          <p className="mt-4 text-center text-muted-foreground">
+            Simply create your own ERC20 token on the Tea blockchain
+          </p>
 
           <div>
             <h2 className="text-xl font-bold mb-4">Your Tokens</h2>

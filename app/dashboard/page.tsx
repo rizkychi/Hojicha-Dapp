@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation"
 import { useWeb3 } from "@/components/providers/web3-provider"
 import { Layout } from "@/components/layout"
 import { DashboardCard } from "@/components/dashboard/dashboard-card"
-import { CreateTokenIcon } from "@/components/icons/create-token-icon"
-import { TransferIcon } from "@/components/icons/transfer-icon"
-import { BatchTransferIcon } from "@/components/icons/batch-transfer-icon"
-import { HistoryIcon } from "@/components/icons/history-icon"
-import { FaucetIcon } from "@/components/icons/faucet-icon"
-import { NftIcon } from "@/components/icons/nft-icon"
-import { AboutIcon } from "@/components/icons/about-icon"
+import { PlusCircle, ArrowRightLeft, Users, History, Droplets, ImageIcon, UserCheck, HelpCircle } from "lucide-react"
 
 export default function DashboardPage() {
   const { isConnected } = useWeb3()
@@ -30,52 +24,67 @@ export default function DashboardPage() {
   const dashboardItems = [
     {
       title: "Create Token",
-      icon: <CreateTokenIcon className="w-12 h-12" />,
+      icon: <PlusCircle className="w-10 h-10 text-emerald-600" />,
       href: "/create-token",
       description: "Create your own ERC20 token with custom name and supply",
       isExternal: false,
+      iconBgColor: "bg-emerald-100",
     },
     {
       title: "Transfer Token",
-      icon: <TransferIcon className="w-12 h-12" />,
+      icon: <ArrowRightLeft className="w-10 h-10 text-blue-600" />,
       href: "/transfer-token",
       description: "Send tokens to any address on the network",
       isExternal: false,
+      iconBgColor: "bg-blue-100",
     },
     {
       title: "Batch Transfer",
-      icon: <BatchTransferIcon className="w-12 h-12" />,
+      icon: <Users className="w-10 h-10 text-indigo-600" />,
       href: "/batch-transfer",
       description: "Send tokens to multiple recipients at once",
       isExternal: false,
+      iconBgColor: "bg-indigo-100",
     },
     {
       title: "Transaction History",
-      icon: <HistoryIcon className="w-12 h-12" />,
+      icon: <History className="w-10 h-10 text-purple-600" />,
       href: "/transaction-history",
       description: "View your token transaction history",
       isExternal: false,
+      iconBgColor: "bg-purple-100",
     },
     {
       title: "TEA Faucet",
-      icon: <FaucetIcon className="w-12 h-12" />,
+      icon: <Droplets className="w-10 h-10 text-cyan-600" />,
       href: "https://faucet-sepolia.tea.xyz/",
       description: "Get free TEA tokens for testing",
       isExternal: true,
+      iconBgColor: "bg-cyan-100",
     },
     {
       title: "Create NFT",
-      icon: <NftIcon className="w-12 h-12" />,
+      icon: <ImageIcon className="w-10 h-10 text-pink-600" />,
       href: "https://nftea-maker.vercel.app/",
       description: "Create and mint your own NFTs on Tea network",
       isExternal: true,
+      iconBgColor: "bg-pink-100",
+    },
+    {
+      title: "KYC Addresses",
+      icon: <UserCheck className="w-10 h-10 text-amber-600" />,
+      href: "https://tea.daov.xyz/kyc-address",
+      description: "Verify your identity for compliant token transfers",
+      isExternal: true,
+      iconBgColor: "bg-amber-100",
     },
     {
       title: "About",
-      icon: <AboutIcon className="w-12 h-12" />,
+      icon: <HelpCircle className="w-10 h-10 text-gray-600" />,
       href: "/about",
       description: "Learn about this application and Tea network",
       isExternal: false,
+      iconBgColor: "bg-gray-100",
     },
   ]
 
@@ -88,11 +97,22 @@ export default function DashboardPage() {
           {dashboardItems.map((item, index) => (
             <div key={item.title} className="fade-in" style={{ animationDelay: `${index * 100}ms` }}>
               {item.isExternal ? (
-                <div onClick={() => handleExternalLink(item.href)}>
-                  <DashboardCard title={item.title} icon={item.icon} description={item.description} />
+                <div onClick={() => handleExternalLink(item.href)} className="cursor-pointer">
+                  <DashboardCard
+                    title={item.title}
+                    icon={item.icon}
+                    description={item.description}
+                    iconBgColor={item.iconBgColor}
+                  />
                 </div>
               ) : (
-                <DashboardCard title={item.title} icon={item.icon} href={item.href} description={item.description} />
+                <DashboardCard
+                  title={item.title}
+                  icon={item.icon}
+                  href={item.href}
+                  description={item.description}
+                  iconBgColor={item.iconBgColor}
+                />
               )}
             </div>
           ))}
