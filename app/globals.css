@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 36 33% 97%;
+    --foreground: 20 39% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 39% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 39% 16%;
+
+    --primary: 25 56% 46%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 60 9% 89%;
+    --secondary-foreground: 20 39% 16%;
+
+    --muted: 60 9% 89%;
+    --muted-foreground: 20 39% 30%;
+
+    --accent: 60 9% 89%;
+    --accent-foreground: 20 39% 16%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 39% 85%;
+    --input: 20 39% 85%;
+    --ring: 25 56% 46%;
+
+    --radius: 1rem;
+
+    /* Custom Hojicha colors */
+    --hojicha-brown: 25 56% 46%;
+    --hojicha-light-brown: 30 40% 70%;
+    --hojicha-dark-brown: 20 39% 16%;
+    --hojicha-beige: 36 33% 97%;
+    --hojicha-soft-green: 120 20% 60%;
+    --hojicha-peach: 25 100% 72%;
+
+    /* Gradient colors */
+    --gradient-start: 25 80% 50%;
+    --gradient-end: 30 70% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.gradient-header {
+  background: linear-gradient(90deg, hsl(var(--gradient-start)), hsl(var(--gradient-end)));
+}
+
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.food-card {
+  @apply bg-white rounded-xl p-4 border border-gray-100 flex flex-col items-center justify-center text-center transition-all hover:border-hojicha-brown/30 hover:shadow-md;
+}
+
+.food-card.selected {
+  @apply bg-hojicha-brown/10 border-hojicha-brown;
+}
+
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.copy-animation {
+  animation: copyFlash 1s ease-in-out;
+}
+
+@keyframes copyFlash {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Kid-friendly animations */
+.bounce {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.wiggle {
+  animation: wiggle 2.5s infinite;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+/* Soft shadows for kid-friendly UI */
+.soft-shadow {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+/* Rounded corners for kid-friendly UI */
+.super-rounded {
+  border-radius: 24px;
+}
