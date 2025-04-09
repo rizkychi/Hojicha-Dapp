@@ -60,23 +60,31 @@ export default function TransferTokenPage() {
 
       // Use setTimeout to ensure the focus is complete
       setTimeout(() => {
-        document.execCommand("paste")
+        navigator.clipboard.readText().then((pastedValue) => {
+          // Get the pasted value and update the form
+          if (pastedValue) {
+            setFormData((prev) => ({ ...prev, recipient: pastedValue }))
+            toast({
+              title: "Address Pasted",
+              description: "Recipient address pasted from clipboard",
+            })
+          } else {
+            toast({
+              title: "Paste Failed",
+              description: "No content in clipboard or paste operation failed",
+              variant: "destructive",
+            })
+          }
 
-        // Get the pasted value and update the form
-        const pastedValue = hiddenInputRef.current?.value || ""
-        if (pastedValue) {
-          setFormData((prev) => ({ ...prev, recipient: pastedValue }))
-          toast({
-            title: "Address Pasted",
-            description: "Recipient address pasted from clipboard",
-          })
-        } else {
+          // Restore focus to the main form
+          document.getElementById("amount")?.focus()
+        }).catch(() => {
           toast({
             title: "Paste Failed",
-            description: "No content in clipboard or paste operation failed",
+            description: "Unable to access clipboard",
             variant: "destructive",
           })
-        }
+        })
 
         // Restore focus to the main form
         document.getElementById("amount")?.focus()

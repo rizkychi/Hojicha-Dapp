@@ -79,29 +79,36 @@ export default function BatchTransferPage() {
       setTimeout(() => {
         document.execCommand("paste")
 
-        // Get the pasted value and update the form
-        const pastedValue = hiddenInputRef.current?.value || ""
-        if (pastedValue) {
-          setFormData((prev) => ({ ...prev, recipients: pastedValue }))
+        // Use Clipboard API to get the pasted value
+        navigator.clipboard.readText().then((pastedValue) => {
+          if (pastedValue) {
+            setFormData((prev) => ({ ...prev, recipients: pastedValue }))
 
-          // Update recipient count
-          const count = pastedValue
-            .split("\n")
-            .map((address) => address.trim())
-            .filter((address) => address.length > 0).length
-          setRecipientCount(count)
+            // Update recipient count
+            const count = pastedValue
+              .split("\n")
+              .map((address) => address.trim())
+              .filter((address) => address.length > 0).length
+            setRecipientCount(count)
 
-          toast({
-            title: "Addresses Pasted",
-            description: `${count} recipient address${count !== 1 ? "es" : ""} pasted from clipboard`,
-          })
-        } else {
+            toast({
+              title: "Addresses Pasted",
+              description: `${count} recipient address${count !== 1 ? "es" : ""} pasted from clipboard`,
+            })
+          } else {
+            toast({
+              title: "Paste Failed",
+              description: "No content in clipboard or paste operation failed",
+              variant: "destructive",
+            })
+          }
+        }).catch(() => {
           toast({
             title: "Paste Failed",
-            description: "No content in clipboard or paste operation failed",
+            description: "Unable to access clipboard",
             variant: "destructive",
           })
-        }
+        })
 
         // Restore focus to the main form
         document.getElementById("recipients")?.focus()
