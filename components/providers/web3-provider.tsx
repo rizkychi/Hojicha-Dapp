@@ -7,6 +7,7 @@ import { ethers } from "ethers"
 import { useToast } from "@/components/ui/use-toast"
 import type { Token } from "@/types/token"
 import type { Transaction } from "@/types/transaction"
+import { ExternalLink } from "lucide-react"
 
 // Hojicha Contract ABI
 const HOJICHA_ABI = [
@@ -923,7 +924,22 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       // Show loading toast
       toast({
         title: "Creating Token",
-        description: "Transaction submitted. Please wait for confirmation...",
+        description: (
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center gap-1">
+              <span>Creating</span>
+              <span className="font-medium">
+                {name} ({symbol})
+              </span>
+              <span>with</span>
+              <span className="font-medium">{initialSupply}</span>
+              <span>initial supply</span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Transaction submitted. Please wait for confirmation...
+            </div>
+          </div>
+        ),
       })
 
       // Wait for transaction to be mined
@@ -977,20 +993,30 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         title: "Token Created Successfully",
         description: (
           <div className="flex flex-col space-y-1">
-            <span>
-              {name} ({symbol}) created successfully
-            </span>
-            <a
-              href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono text-blue-500 hover:underline truncate"
-            >
-              TX: {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
-            </a>
+            <div className="flex items-center gap-1">
+              <span className="font-medium">
+                {name} ({symbol})
+              </span>
+              <span>created with</span>
+              <span className="font-medium">{initialSupply}</span>
+              <span>initial supply</span>
+            </div>
+            <div className="mt-1 pt-1 border-t border-gray-100">
+              <a
+                href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono text-hojicha-brown hover:underline truncate flex items-center gap-1"
+              >
+                <span>View transaction</span>
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
         ),
         variant: "default",
+        className: "bg-green-50 border-green-200",
+        duration: 5000, // Add explicit duration
       })
 
       return newToken
@@ -1029,7 +1055,24 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       // Show loading toast
       toast({
         title: "Transferring Token",
-        description: "Transaction submitted. Please wait for confirmation...",
+        description: (
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center gap-1">
+              <span>Sending</span>
+              <span className="font-medium">{amount}</span>
+              {userTokens.length > 0 && (
+                <span className="font-medium">{userTokens.find((t) => t.address === tokenAddress)?.symbol}</span>
+              )}
+              <span>to</span>
+              <span className="font-mono text-xs">
+                {to.slice(0, 6)}...{to.slice(-4)}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Transaction submitted. Please wait for confirmation...
+            </div>
+          </div>
+        ),
       })
 
       // Wait for transaction to be mined
@@ -1067,18 +1110,32 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         title: "Transfer Successful",
         description: (
           <div className="flex flex-col space-y-1">
-            <span>Tokens transferred successfully</span>
-            <a
-              href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono text-blue-500 hover:underline truncate"
-            >
-              TX: {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
-            </a>
+            <div className="flex items-center gap-1">
+              <span className="font-medium">{amount}</span>
+              {userTokens.length > 0 && (
+                <span className="font-medium">{userTokens.find((t) => t.address === tokenAddress)?.symbol}</span>
+              )}
+              <span>transferred to</span>
+              <span className="font-mono text-xs">
+                {to.slice(0, 6)}...{to.slice(-4)}
+              </span>
+            </div>
+            <div className="mt-1 pt-1 border-t border-gray-100">
+              <a
+                href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono text-hojicha-brown hover:underline truncate flex items-center gap-1"
+              >
+                <span>View transaction</span>
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
         ),
         variant: "default",
+        className: "bg-green-50 border-green-200",
+        duration: 5000, // Add explicit duration
       })
 
       return newTransaction
@@ -1140,7 +1197,33 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       // Show loading toast
       toast({
         title: "Batch Transferring Tokens",
-        description: "Transaction submitted. Please wait for confirmation...",
+        description: (
+          <div className="flex flex-col space-y-1">
+            <div>
+              <span>Sending</span>
+              {userTokens.length > 0 && (
+                <span className="font-medium"> {userTokens.find((t) => t.address === tokenAddress)?.symbol}</span>
+              )}
+              <span> tokens to </span>
+              <span className="font-medium">{recipients.length}</span>
+              <span> recipients</span>
+            </div>
+            {minAmount !== undefined && maxAmount !== undefined ? (
+              <div className="text-xs text-muted-foreground">
+                Random amounts between {minAmount} and {maxAmount}{" "}
+                {userTokens.length > 0 && userTokens.find((t) => t.address === tokenAddress)?.symbol}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                Fixed amount of {amount}{" "}
+                {userTokens.length > 0 && userTokens.find((t) => t.address === tokenAddress)?.symbol} per recipient
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground mt-1">
+              Transaction submitted. Please wait for confirmation...
+            </div>
+          </div>
+        ),
       })
 
       // Wait for transaction to be mined
@@ -1183,18 +1266,41 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         title: "Batch Transfer Successful",
         description: (
           <div className="flex flex-col space-y-1">
-            <span>Tokens transferred to {recipients.length} recipients</span>
-            <a
-              href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono text-blue-500 hover:underline truncate"
-            >
-              TX: {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
-            </a>
+            <div>
+              {userTokens.length > 0 && (
+                <span className="font-medium">{userTokens.find((t) => t.address === tokenAddress)?.symbol}</span>
+              )}
+              <span> tokens sent to </span>
+              <span className="font-medium">{recipients.length}</span>
+              <span> recipients</span>
+            </div>
+            {minAmount !== undefined && maxAmount !== undefined ? (
+              <div className="text-xs text-muted-foreground">
+                Random amounts between {minAmount} and {maxAmount}{" "}
+                {userTokens.length > 0 && userTokens.find((t) => t.address === tokenAddress)?.symbol}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                Fixed amount of {amount}{" "}
+                {userTokens.length > 0 && userTokens.find((t) => t.address === tokenAddress)?.symbol} per recipient
+              </div>
+            )}
+            <div className="mt-1 pt-1 border-t border-gray-100">
+              <a
+                href={`https://sepolia.tea.xyz/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-mono text-hojicha-brown hover:underline truncate flex items-center gap-1"
+              >
+                <span>View transaction</span>
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
         ),
         variant: "default",
+        className: "bg-green-50 border-green-200",
+        duration: 5000,
       })
 
       return newTransactions
@@ -1232,7 +1338,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(updateBalance, 15000)
 
     return () => clearInterval(interval)
-  }, [isConnected, provider, account])
+  }, [isConnected, provider, account, userTokens])
 
   // Listen for account changes
   useEffect(() => {

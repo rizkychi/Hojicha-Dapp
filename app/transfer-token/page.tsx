@@ -60,31 +60,34 @@ export default function TransferTokenPage() {
 
       // Use setTimeout to ensure the focus is complete
       setTimeout(() => {
-        navigator.clipboard.readText().then((pastedValue) => {
-          // Get the pasted value and update the form
-          if (pastedValue) {
-            setFormData((prev) => ({ ...prev, recipient: pastedValue }))
-            toast({
-              title: "Address Pasted",
-              description: "Recipient address pasted from clipboard",
-            })
-          } else {
+        navigator.clipboard
+          .readText()
+          .then((pastedValue) => {
+            // Get the pasted value and update the form
+            if (pastedValue) {
+              setFormData((prev) => ({ ...prev, recipient: pastedValue }))
+              toast({
+                title: "Address Pasted",
+                description: "Recipient address pasted from clipboard",
+              })
+            } else {
+              toast({
+                title: "Paste Failed",
+                description: "No content in clipboard or paste operation failed",
+                variant: "destructive",
+              })
+            }
+
+            // Restore focus to the main form
+            document.getElementById("amount")?.focus()
+          })
+          .catch(() => {
             toast({
               title: "Paste Failed",
-              description: "No content in clipboard or paste operation failed",
+              description: "Unable to access clipboard",
               variant: "destructive",
             })
-          }
-
-          // Restore focus to the main form
-          document.getElementById("amount")?.focus()
-        }).catch(() => {
-          toast({
-            title: "Paste Failed",
-            description: "Unable to access clipboard",
-            variant: "destructive",
           })
-        })
 
         // Restore focus to the main form
         document.getElementById("amount")?.focus()
@@ -232,9 +235,7 @@ export default function TransferTokenPage() {
           </CardContent>
         </Card>
 
-        <p className="mt-4 text-center text-muted-foreground">
-          Easily transfer your tokens to any Ethereum address
-        </p>
+        <p className="mt-4 text-center text-muted-foreground">Easily transfer your tokens to any Ethereum address</p>
       </div>
     </Layout>
   )

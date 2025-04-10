@@ -80,35 +80,38 @@ export default function BatchTransferPage() {
         document.execCommand("paste")
 
         // Use Clipboard API to get the pasted value
-        navigator.clipboard.readText().then((pastedValue) => {
-          if (pastedValue) {
-            setFormData((prev) => ({ ...prev, recipients: pastedValue }))
+        navigator.clipboard
+          .readText()
+          .then((pastedValue) => {
+            if (pastedValue) {
+              setFormData((prev) => ({ ...prev, recipients: pastedValue }))
 
-            // Update recipient count
-            const count = pastedValue
-              .split("\n")
-              .map((address) => address.trim())
-              .filter((address) => address.length > 0).length
-            setRecipientCount(count)
+              // Update recipient count
+              const count = pastedValue
+                .split("\n")
+                .map((address) => address.trim())
+                .filter((address) => address.length > 0).length
+              setRecipientCount(count)
 
-            toast({
-              title: "Addresses Pasted",
-              description: `${count} recipient address${count !== 1 ? "es" : ""} pasted from clipboard`,
-            })
-          } else {
+              toast({
+                title: "Addresses Pasted",
+                description: `${count} recipient address${count !== 1 ? "es" : ""} pasted from clipboard`,
+              })
+            } else {
+              toast({
+                title: "Paste Failed",
+                description: "No content in clipboard or paste operation failed",
+                variant: "destructive",
+              })
+            }
+          })
+          .catch(() => {
             toast({
               title: "Paste Failed",
-              description: "No content in clipboard or paste operation failed",
+              description: "Unable to access clipboard",
               variant: "destructive",
             })
-          }
-        }).catch(() => {
-          toast({
-            title: "Paste Failed",
-            description: "Unable to access clipboard",
-            variant: "destructive",
           })
-        })
 
         // Restore focus to the main form
         document.getElementById("recipients")?.focus()
